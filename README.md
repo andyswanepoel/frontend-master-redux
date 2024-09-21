@@ -6,6 +6,12 @@ The course is split into a few parts, which I have added notes for in each secti
 
 ## Plain Old Redux
 
-The course first teaches you about just the Redux library, you can find this in the [`vanilla-redux` folder](./vanilla-redux/).
+The course first teaches you about just the Redux library. You can find this in the [`vanilla-redux` folder](./vanilla-redux/).
 
-See the [ReadMe](./vanilla-redux//README.md) for notes that I took.
+See the [ReadMe](./vanilla-redux/README.md) for notes that I took.
+
+## Connecting Redux to React
+
+Next we added Redux to a React project. You can find this in the [`react-with-redux` folder](./react-with-redux/).
+
+See the [ReadMe](./react-with-redux/README.md) for notes that I took.
