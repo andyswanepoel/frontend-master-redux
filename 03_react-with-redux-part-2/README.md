@@ -1,90 +1,131 @@
-# React with Redux
+# React with Redux Part 2
 
-For the most part, this was very similar to plain Redux. 
+Here we took a deeper dive into some of the React with Redux patterns.
 
-We created a simple counter, which could increment, decrement, and set a value.
+## Connecting store to presentational components
 
-## Basic Set Up
+There is a pattern when working with `react-redux` that uses higher order components to pass state and dispatch functions as props to your components.
 
-We set up the following using nothing but the `redux` library and JavaScript:
-1. [actions](./src/actions.js)
-2. [reducer](./src/reducer.js)
-3. [store](./src/store.js)
+It is a different approach from the `useSelector` and `useDispatch`, since it has been around longer than hooks were a thing.
 
-## Introducing Redux into React
+Some of the advantages it provides are that the components can be easily tested or used in a Storybook-like environment because as long as you're passing the props to the component, it doesn't need to know whether they came from the state or were hardcoded.
 
-Using the `react-redux` library, we were able to combine the our store with our React code.
+These containers rely mainly on:
+- `connect`: a function provided from `react-redux`
+- `mapStateToProps`: a function that takes your state (and optionally the props passed to the component) and returns an object of additional props to pass to the presentational component
+- `mapDispatchToProps`: a function that takes your state (and optionally the props passed to the component) and returns an object of dispatch functions to pass to the presentation component
 
-The `Provider` component wraps our application and gives all of our components access to the store. Internally, it uses React's Context API.
+Usually, you'll see a component directory structure organized with a component and then a component container.
 
-```js
-import { Provider } from 'react-redux';
-import { store } from './store';
+```
+|___ src
+  |___SummaryPanel
+    |___SummaryPanel.jsx
+    |___SummaryPanelContainer.jsx 
 
-const AppWithRedux = () => (
-    <Provider store={store}>
-        <App />
-    </Provider>
-)
+// Based on preference, people may call it ConnectedSummaryPanel.
 ```
 
-## Getting Redux State into Components
+## `connect`
 
-`react-redux` provides a hook to get state from the Redux store into your components.
-
-`useSelector` accepts a function that accepts the state and likely returns some value from that state.
-
-If our state was keeping track of wins and losses, we could get those values with two `useSelector` hooks.
+The `connect` function creates a higher order component with some connection to your Redux store.
 
 ```js
-import { useSelector } from 'react-redux';
+import { SummaryPanel } from './SummaryPanel';
+export const SummaryPanelContainer = connect()(SummaryPanel);
+```
 
-const YourPersonalRecord = () => {
-    const wins = useSelector(state => state.wins);
-    const losses = useSelector(state => state.losses);
+The function accepts two optional arguments: `mapStateToProps` and `mapDispatchToProps`. If neither are provided, you will still have access to `dispatch` in your presentational component.
 
-    return (
-        <p>You have a record of ${wins}-${losses}!</p>
-    )
+## `mapStateToProps`
+
+As mentioned, `mapStateToProps` is a function that accepts `state` and an optional `ownProps` and returns an object of props to pass to the presentational component.
+
+```js
+import { TodoList } from './TodoList';
+
+const mapStateToProps = (state) => {
+  const { todos } = state
+  return { todoList: todos.allIds }
+}
+
+export default connect(mapStateToProps)(TodoList)
+```
+
+### Using selectors
+
+Since you're constantly needed to get things from your state, the pattern of creating selectors has emerged. This allows the code to be reused and in case your state's structure changes, you only have to update your selector function.
+
+In it's simplest form, a selector is a function that returns some part of the state.
+
+```js
+export const selectItems = state => state.items;  
+```
+
+You could then use this selector within your `mapStateToProps`
+
+```js
+import { selectItems } from './items/selectors';
+
+const mapStateToProps = (state) => {
+  return { items: selectItems(state) }
 }
 ```
 
-## Updating Redux State from Components
+### Combining and optimizing selectors with `createSelector`
 
-`react-redux` provides a hook to get the dispatch function from the Redux store into your components.
-
-`useDispatch` returns a dispatch function with you can then use to send actions to the store.
+The reselect library offers a function called `createSelector` which allows your to build up selectors form other selectors. It memoizes the results and will only run the selector function again if any of the dependencies have update. It can be though of similar to a `useCallback` or `useMemo` hook in React.
 
 ```js
-import { useDispatch } from 'react-redux';
+import { createSelector } from "reselect";
 
-const WIN = "WIN";
+export const selectItems = state => state.items;
 
-const YouWin = () => {
-    const dispatch = useDispatch();
-
-    const handleAcceptWin = () => {
-        dispatch({ type: WIN });
-    }
-
-    return (
-        <div>
-            <p>You win! Click to accept!</p>
-            <button onClick={handleAcceptWin}>
-                Accept my victory
-            </button>
-        </div>
-    )
-}
-
+export const selectSubTotal = createSelector([selectItems], items =>
+  items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+);
 ```
 
-## Wrap up
+The second argument passed will be a function whose arguments are the return values of the items in the array.
 
-There was a bit more on using the `bindActionCreators` function, encapsulating logic in custom hooks, etc. But I think the bulk of what we need to know is covered above.
+## `mapDispatchToProps`
 
-It is actually quite simple, we need to:
-- Create actions
-- Create reducer(s)
-- Create store
-- Hook the store up to React with `react-redux`
+Similar to `mapStateToProps`, we use `mapDispatchToProps` to pass dispatch functions as props to your connected components.
+
+### As an object of action creators
+
+If the dispatch functions are simple, `mapDispatchToProps` can just be an object of action creators. React Redux will automatically add `dispatch` to the action creators
+
+```js
+import { Counter } from './Counter'
+import { increment, decrement, reset } from './counterActions'
+
+const actionCreators = {
+  increment,
+  decrement,
+  reset,
+}
+
+export default connect(mapState, actionCreators)(Counter)
+```
+
+### As a function
+
+If you need access to the `dispatch` or `ownProps`, you may need to use the function version of `mapDispatchToProps`.
+
+This can be useful if you need additional information, or need to customize the functions. You just need to make sure the function signature matches that of the function used in the presentational component.
+
+Here we're using `bindActionCreators` to add `dispatch` to each of the action creators.
+```js
+const mapDispatchToProps = (dispatch, ownProps) =>
+  bindActionCreators(
+    {
+      remove: () => removeItem(ownProps.uuid),
+      updatePrice: price => updateItemPrice(ownProps.uuid, price),
+      updateQuantity: quantity => updateItemQuantity(ownProps.uuid, quantity)
+    },
+    dispatch
+  );
+```
+
+I think that basically covers everything from these lessons. It was basically just showing the alternate to using the hooks `useSelector` and `useDispatch`.
