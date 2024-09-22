@@ -15,3 +15,5 @@ See the [ReadMe](./01_vanilla-redux/README.md) for notes that I took.
 Next we added Redux to a React project. You can find this in the [`react-with-redux` folder](./02_react-with-redux/).
 
 See the [ReadMe](./02_react-with-redux/README.md) for notes that I took.
+
+## Using the Connect API and Higher Order Components
