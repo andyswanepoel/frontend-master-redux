@@ -1,3 +1,4 @@
+import { produce } from "immer";
 import {
   ITEM_ADDED,
   ITEM_PRICE_UPDATED,
@@ -11,35 +12,65 @@ export const initialItems = [
   { uuid: id++, name: "Vegan Ham Sandwich", price: 12, quantity: 1 }
 ];
 
-export const reducer = (state = initialItems, action) => {
+// export const reducer = (items = initialItems, action) => {
+//   // with immer, you can mutate the draft state object
+//   // it will go make the changes immutable for you
+//   if (action.type === ITEM_ADDED) {
+//     return produce(items, draftItems => {
+//       const item = { uuid: id++, quantity: 1, ...action.payload };
+//       draftItems.push(item);
+//     });
+//   }
+
+//   if (action.type === ITEM_REMOVED) {
+//     return items.filter(item => item.uuid !== action.payload.uuid);
+//   }
+
+//   if (action.type === ITEM_PRICE_UPDATED) {
+//     return produce(items, draftItems => {
+//       const item = draftItems.find(item => item.uuid === action.payload.uuid);
+//       item.price = parseInt(action.payload.price, 10);
+//     });
+//   }
+
+//   if (action.type === ITEM_QUANTITY_UPDATED) {
+//     return produce(items, draftItems => {
+//       const item = draftItems.find(item => item.uuid === action.payload.uuid);
+//       item.quantity = action.payload.quantity;
+//     });
+//   }
+
+//   return items;
+// };
+
+// You could see the above getting a bit tedious to have to return the produce function result each time.
+// produce can also wrap your whole reducer so that you don't have to call it each time
+// this way the "state" that you're editing is actually the mutable version
+
+// it takes you reducer and an initial state
+// then you can freely update things in the state without worry
+
+export const reducer = produce((items = initialItems, action) => {
   if (action.type === ITEM_ADDED) {
     const item = { uuid: id++, quantity: 1, ...action.payload };
-    return [...state, item];
+    items.push(item);
   }
 
   if (action.type === ITEM_REMOVED) {
-    return state.filter(item => item.uuid !== action.payload.uuid);
+    // if you return, I believe it will use that new object
+    // if you don't return it will just use the mutable state object
+    return items.filter(item => item.uuid !== action.payload.uuid);
   }
 
   if (action.type === ITEM_PRICE_UPDATED) {
-    return state.map(item => {
-      if (item.uuid === action.payload.uuid) {
-        return { ...item, price: action.payload.price };
-      }
-      return item;
-    });
+    const item = items.find(item => item.uuid === action.payload.uuid);
+    item.price = parseInt(action.payload.price, 10);
   }
 
   if (action.type === ITEM_QUANTITY_UPDATED) {
-    return state.map(item => {
-      if (item.uuid === action.payload.uuid) {
-        return { ...item, quantity: action.payload.quantity };
-      }
-      return item;
-    });
+    const item = items.find(item => item.uuid === action.payload.uuid);
+    item.quantity = action.payload.quantity;
   }
-
-  return state;
-};
+}, initialItems);
 
 export default reducer;
