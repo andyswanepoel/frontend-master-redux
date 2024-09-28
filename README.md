@@ -17,3 +17,7 @@ Next we added Redux to a React project. You can find this in the [`react-with-re
 See the [ReadMe](./02_react-with-redux/README.md) for notes that I took.
 
 ## Using the Connect API and Higher Order Components
+
+We used higher order components along with `connect`, `mapStateToProps`, and `matchDispatchToProps` to pass Redux state into presentational components. You can see the application in the [`react-with-redux-part-2` folder](./03_react-with-redux-part-2/).
+
+See the [ReadMe](./03_react-with-redux-part-2/README.md) for notes that I took.
