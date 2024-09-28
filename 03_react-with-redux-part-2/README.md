@@ -129,3 +129,84 @@ const mapDispatchToProps = (dispatch, ownProps) =>
 ```
 
 I think that basically covers everything from these lessons. It was basically just showing the alternate to using the hooks `useSelector` and `useDispatch`.
+
+## Immutability
+
+As we've seen, whenever you update state you need to do it in an immutable way. You'll usually see:
+
+```js
+
+return {
+  ...state,
+  something: "different"
+}
+```
+
+There are libraries that exist to allow you to mutate your state, at least it appears that way. One of those libraries is Immer. It is actually used in Redux Toolkit.
+
+### Immer
+
+So how do we use Immer? There are two ways in which we can use it:
+- For each action in the reducer
+- For the whole reducer
+
+#### Each action
+
+When using Immer per action, we will use `produce` function to get access to a `draftState` that we can mutate. Immer will then sort out all the changes that need to be done to the state in an immutable way.
+
+```js
+export const reducer = (items = initialItems, action) => {
+  if (action.type === ITEM_ADDED) {
+    return produce(items, draftItems => {
+      const item = { uuid: id++, quantity: 1, ...action.payload };
+      draftItems.push(item);
+    });
+  }
+  if (action.type === ITEM_REMOVED) {
+    return items.filter(item => item.uuid !== action.payload.uuid);
+  }
+
+  if (action.type === ITEM_PRICE_UPDATED) {
+    return produce(items, draftItems => {
+      const item = draftItems.find(item => item.uuid === action.payload.uuid);
+      item.price = parseInt(action.payload.price, 10);
+    });
+  }
+
+  if (action.type === ITEM_QUANTITY_UPDATED) {
+    return produce(items, draftItems => {
+      const item = draftItems.find(item => item.uuid === action.payload.uuid);
+      item.quantity = action.payload.quantity;
+    });
+  }
+
+  return items;
+}
+```
+
+#### Entire reducer
+
+We can also use the `produce` function on the entire reducer and then just mutate the state. You can still do things in an immutable way, for example in the `ITEM_REMOVED` action. However, if you don't return anything, I believe it will just return the state. Notice how in this example, we don't have to return the state at the end.
+
+```js
+export const reducer = produce((items = initialItems, action) => {
+  if (action.type === ITEM_ADDED) {
+    const item = { uuid: id++, quantity: 1, ...action.payload };
+    items.push(item);
+  }
+
+  if (action.type === ITEM_REMOVED) {
+    return items.filter(item => item.uuid !== action.payload.uuid);
+  }
+
+  if (action.type === ITEM_PRICE_UPDATED) {
+    const item = items.find(item => item.uuid === action.payload.uuid);
+    item.price = parseInt(action.payload.price, 10);
+  }
+
+  if (action.type === ITEM_QUANTITY_UPDATED) {
+    const item = items.find(item => item.uuid === action.payload.uuid);
+    item.quantity = action.payload.quantity;
+  }
+}, initialItems);
+```
